@@ -89,12 +89,21 @@
     color: #e2e8f0;
   }
   .day.available {
+    background: #713f12;
+    color: #fbbf24;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .day.available:hover {
+    background: #854d0e;
+  }
+  .day.new-date {
     background: #166534;
     color: #4ade80;
     font-weight: 700;
     cursor: pointer;
   }
-  .day.available:hover {
+  .day.new-date:hover {
     background: #15803d;
   }
   .legend {
@@ -115,7 +124,8 @@
     height: 12px;
     border-radius: 3px;
   }
-  .legend-dot.available { background: #166534; }
+  .legend-dot.new-date { background: #166534; }
+  .legend-dot.available { background: #713f12; }
   .legend-dot.today { border: 2px solid #3b82f6; }
   .error-banner {
     background: #7f1d1d;
@@ -160,6 +170,10 @@
 <div class="calendars" id="calendars"></div>
 
 <div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot new-date"></div>
+    <span>New (last check)</span>
+  </div>
   <div class="legend-item">
     <div class="legend-dot available"></div>
     <span>Available</span>
@@ -229,7 +243,7 @@ function getMonthsToShow(availableDates) {
     .sort((a, b) => a.year - b.year || a.month - b.month);
 }
 
-function renderCalendar(year, month, availableSet) {
+function renderCalendar(year, month, availableSet, newSet) {
   const today = new Date();
   const firstDay = new Date(year, month, 1);
   // Monday-based: 0=Mon, 6=Sun
@@ -249,11 +263,13 @@ function renderCalendar(year, month, availableSet) {
     const date = new Date(year, month, d);
     const dateKey = `${d}/${month + 1}/${year}`;
     const isToday = isSameDay(date, today);
+    const isNew = newSet.has(dateKey);
     const isAvailable = availableSet.has(dateKey);
 
     let cls = 'day current-month';
     if (isToday) cls += ' today';
-    if (isAvailable) cls += ' available';
+    if (isNew) cls += ' new-date';
+    else if (isAvailable) cls += ' available';
 
     html += `<div class="${cls}">${d}</div>`;
   }
@@ -300,8 +316,9 @@ async function loadAndRender() {
       document.getElementById('errorBanner').style.display = 'none';
     }
 
-    // Build set of available dates
+    // Build sets of available and new dates
     const availableSet = new Set(data.available_dates);
+    const newSet = new Set(data.new_dates || []);
 
     // Determine which months to render
     const months = getMonthsToShow(data.available_dates);
@@ -309,7 +326,7 @@ async function loadAndRender() {
     // Render calendars
     let html = '';
     for (const { year, month } of months) {
-      html += renderCalendar(year, month, availableSet);
+      html += renderCalendar(year, month, availableSet, newSet);
     }
     document.getElementById('calendars').innerHTML = html;
 
